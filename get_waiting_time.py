@@ -1,5 +1,6 @@
 import csv
 import locale
+import json
 import os
 import requests
 
@@ -10,43 +11,8 @@ from collections import OrderedDict
 from datetime import datetime, date
 from pprint import  pprint
 
-ATTRACTION_LIST = {
- '11': 'Goudurix',
- '12': 'La Trace du Hourra',
- '13': 'Les Petits Drakkars',
- '25': 'Oziris',
- '68': 'Le Défi de César',
- '70': 'SOS Numérobis',
- '613': 'Les Chevaux du Roy',
- '616': 'Le Carrousel de César',
- '619': 'Les Espions de César',
- '622': 'Epidemaïs Croisière',
- '625': "La Rivière d'Elis",
- '628': 'Nationale 7',
- '631': 'La Petite Tempête',
- '636': "Le Vol d'Icare",
- '639': "L'Hydre de Lerne",
- '642': 'Le Transdemonium',
- '645': "L'Oxygénarium",
- '648': 'Les Chaudrons',
- '658': 'Le Cheval de Troie',
- '661': 'La Galère',
- '664': 'Les Chaises Volantes',
- '667': 'Le Petit Train',
- '670': 'Les Petites Chaises Volantes',
- '673': "L'Escadrille des As",
- '676': 'Le Mini Carrousel',
- '679': 'Les Petits Chars tamponneurs',
- '2482': 'Enigmatix',
- '2483': 'Aérodynamix',
- '2484': 'Lavomatix',
- '2485': 'Hydrolix',
- '2486': 'Etamine',
- '63760': 'Discobélix',
- '92214': 'Pégase Express',
- '113319': 'Mission perdue'
-}
 
+ATTRACTION_LIST = json.load("attractions.json")
 ATTRACTION_LIST_ORDERED = OrderedDict(sorted(ATTRACTION_LIST.items(), key=lambda t: t[0]))
 
 HEADERS = {
@@ -56,6 +22,9 @@ HEADERS = {
 ATTRACTION_URL = "https://www.parcasterix.fr/webservices/api/attractions.json?device=android&version=320&apiversion=1&lang=fr"
 ATTENTIX_URL = "https://www.parcasterix.fr/webservices/api/attentix.json?device=android&version=320&apiversion=1&lang=fr"
 FRENCH_VACATION_URL = "https://www.data.gouv.fr/fr/datasets/r/000ae493-9fa8-4088-9f53-76d375204036"
+
+OWM_API_KEY = os.getenv("OWN_API_KEY")
+
 
 def get_holidays(today_date):
     if today_date in holidays.France():
@@ -76,11 +45,11 @@ def check_integrity():
     for item in attraction_response:
         if item["code"] in ATTRACTION_LIST_ORDERED:
             if ATTRACTION_LIST_ORDERED[item["code"]].lower() != item["title"].lower():
-                print(f"Attraction name doesn't march in {item['code']}")
+                print(f"Attraction name doesn't match {item['code']}\nPlease check if attractions have been modified.")
 
 
 def main():
-    owm = pyowm.OWM(API_key='9191a5ce1f1716d8c08bd07d9230fae3', language="fr")
+    owm = pyowm.OWM(API_key=OWM_API_KEY, language="fr")
     weather = owm.weather_at_coords(49.135143, 2.565823).get_weather()
     check_integrity()
 
