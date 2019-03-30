@@ -11,7 +11,6 @@ import pyowm
 
 from collections import OrderedDict
 from datetime import datetime, date
-from pprint import  pprint
 
 
 class WaitingTimeGetter:
@@ -41,18 +40,24 @@ class WaitingTimeGetter:
     def get_today_holidays(self):
         today_date = date.today()
 
-        if today_date in holidays.France():
-            return "Public Holiday"
-        else:
-            holidays_check = {"A": False, "B": False, "C": False}
-            holidays_dict = requests.get(self.FRENCH_VACATION_URL, headers=self.HEADERS).json()
-            holidays_dict = [holidays_item["fields"] for holidays_item in holidays_dict if "Zone" in holidays_item["fields"]["zones"]]
-            for holidays_period in holidays_dict:
-                if date.fromisoformat(holidays_period["start_date"]) <= today_date < date.fromisoformat(holidays_period["end_date"]):
-                    for zone in ("A", "B", "C"):
-                        if zone in holidays_period["zones"]:
-                            holidays_check[zone] = True
-            return ",".join([zone[0] for zone in holidays_check.items() if zone[1]])
+        holidays_today = {
+            "French Holiday A Zone": False, 
+            "French Holiday B Zone": False,
+            "French Holiday C Zone": False
+        }
+
+        holidays_today["French Public Holiday"] = True if today_date in holidays.France() else False
+
+        # Get french public holidays per zone
+        holidays_dict = requests.get(self.FRENCH_VACATION_URL, headers=self.HEADERS).json()
+        holidays_dict = [holidays_item["fields"] for holidays_item in holidays_dict if "Zone" in holidays_item["fields"]["zones"]]
+        for holidays_period in holidays_dict:
+            if date.fromisoformat(holidays_period["start_date"]) <= today_date < date.fromisoformat(holidays_period["end_date"]):
+                for zone in ("A", "B", "C"):
+                    if zone in holidays_period["zones"]:
+                        holidays_today[f"French Holiday {zone} Zone"] = True
+                    
+        return holidays_today
 
     def check_attractions(self):
         attraction_response = requests.get(self.ATTRACTION_URL, headers=self.HEADERS).json()["result"]["attractions"]
@@ -62,21 +67,20 @@ class WaitingTimeGetter:
                     print(f"Attraction name doesn't match {item['code']}\nPlease check if attractions have been modified.")
 
     def get_waiting_time(self):
-        waiting_time_dict = OrderedDict()
+        waiting_time_dict = OrderedDict([("WaitingTime", {})])
         api_response = requests.get(self.ATTENTIX_URL, headers=self.HEADERS).json()["latency"]["latency"]
 
         for item in self.attractions.items():
             attraction = next(waiting_time for waiting_time in api_response if waiting_time["attractionid"] == item[0])
             try:
-                waiting_time_dict[item[1]] = int(attraction["latency"])
+                waiting_time_dict["WaitingTime"][item[1]] = int(attraction["latency"])
             except (ValueError, KeyError):
         #        print(f"Can't translate \"{attraction['latency'] if 'latency' in attraction else 'NONE'}\"")
-                waiting_time_dict[item[1]] = None
+                waiting_time_dict["WaitingTime"][item[1]] = None
 
         # locale.setlocale(category=locale.LC_ALL, locale="French")
 
-        waiting_time_dict["Date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-        waiting_time_dict["Weekday"] = datetime.now().strftime("%A")
+        waiting_time_dict["Datetime"] = datetime.now()
         waiting_time_dict["Weather"] = self.weather.get_detailed_status()
         waiting_time_dict["Temperature"] = self.weather.get_temperature("celsius")["temp"]   
         waiting_time_dict["Holidays"] = self.get_today_holidays()
@@ -85,5 +89,6 @@ class WaitingTimeGetter:
 
 
 if __name__ == "__main__":
+    from pprint import  pprint
     wtg = WaitingTimeGetter()
-    print(wtg.get_waiting_time())
+    pprint(wtg.get_waiting_time())
