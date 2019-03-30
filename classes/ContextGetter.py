@@ -50,6 +50,7 @@ class ContextGetter():
 
     def get_context(self):
         return {
+            "Datetime": datetime.datetime.now(),
             "Holidays": self.get_holidays(),
             "Weather": self.weather.get_detailed_status(),
             "Temperature": self.weather.get_temperature("celsius")["temp"]
