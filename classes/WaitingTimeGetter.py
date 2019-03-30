@@ -3,6 +3,7 @@
 import csv
 import locale
 import json
+import logging
 import os
 import requests
 
@@ -24,20 +25,20 @@ class WaitingTimeGetter:
     attractions = {}
 
     def __init__(self):
-        self.init_owm()
-        self.get_attractions()
-        self.check_attractions()
+        self._init_owm()
+        self._get_attractions()
+        self._check_attractions()
 
-    def init_owm(self):
+    def _init_owm(self):
         self.owm = pyowm.OWM(API_key=os.getenv("OWM_API_KEY"), version="2.5")
         self.weather = self.owm.weather_at_coords(49.135143, 2.565823).get_weather()
 
-    def get_attractions(self):
+    def _get_attractions(self):
         with open("attractions.json") as attractions_file:
             attractions = json.load(attractions_file)
             self.attractions = OrderedDict(sorted(attractions.items(), key=lambda t: t[0]))
 
-    def get_today_holidays(self):
+    def _get_today_holidays(self):
         today_date = date.today()
 
         holidays_today = {
@@ -59,12 +60,12 @@ class WaitingTimeGetter:
                     
         return holidays_today
 
-    def check_attractions(self):
+    def _check_attractions(self):
         attraction_response = requests.get(self.ATTRACTION_URL, headers=self.HEADERS).json()["result"]["attractions"]
         for item in attraction_response:
             if item["code"] in self.attractions:
                 if self.attractions[item["code"]].lower() != item["title"].lower():
-                    print(f"Attraction name doesn't match {item['code']}\nPlease check if attractions have been modified.")
+                    logging.warning(f"Attraction name doesn't match {item['code']}\nPlease check if attractions have been modified.")
 
     def get_waiting_time(self):
         waiting_time_dict = OrderedDict([("WaitingTime", {})])
@@ -75,7 +76,7 @@ class WaitingTimeGetter:
             try:
                 waiting_time_dict["WaitingTime"][item[1]] = int(attraction["latency"])
             except (ValueError, KeyError):
-        #        print(f"Can't translate \"{attraction['latency'] if 'latency' in attraction else 'NONE'}\"")
+                logging.debug(f"Can't translate \"{attraction['latency'] if 'latency' in attraction else 'NONE'}\"")
                 waiting_time_dict["WaitingTime"][item[1]] = None
 
         # locale.setlocale(category=locale.LC_ALL, locale="French")
@@ -83,12 +84,12 @@ class WaitingTimeGetter:
         waiting_time_dict["Datetime"] = datetime.now()
         waiting_time_dict["Weather"] = self.weather.get_detailed_status()
         waiting_time_dict["Temperature"] = self.weather.get_temperature("celsius")["temp"]   
-        waiting_time_dict["Holidays"] = self.get_today_holidays()
+        waiting_time_dict["Holidays"] = self._get_today_holidays()
 
         return waiting_time_dict
 
 
 if __name__ == "__main__":
-    from pprint import  pprint
+    from pprint import pprint
     wtg = WaitingTimeGetter()
     pprint(wtg.get_waiting_time())
