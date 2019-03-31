@@ -18,8 +18,10 @@ class ContextGetter():
     def __init__(self):
         self._init_owm()
 
-    def _init_owm(self):
-        self.owm = pyowm.OWM(API_key=os.getenv("OWM_API_KEY"), version="2.5")
+    def _init_owm(self, api_key=None):
+        if not api_key:
+            api_key = os.getenv("OWM_API_KEY")
+        self.owm = pyowm.OWM(API_key=api_key, version="2.5")
         self.weather = self.owm.weather_at_coords(49.135143, 2.565823).get_weather()
 
     def get_holidays(self, date=datetime.date.today()):
