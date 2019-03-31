@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import locale
 import datetime
 import json
 import logging
@@ -43,8 +42,6 @@ class WaitingTimeGetter:
             except (ValueError, KeyError):
                 logging.debug(f"Can't translate \"{attraction['latency'] if 'latency' in attraction else 'NONE'}\"")
                 waiting_time_dict["WaitingTime"][item[1]] = None
-
-        # locale.setlocale(category=locale.LC_ALL, locale="French")
 
         waiting_time_dict["Datetime"] = datetime.datetime.now()
 
