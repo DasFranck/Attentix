@@ -2,10 +2,11 @@
 
 import datetime
 import os
-import requests
+import time
 
-import pyowm
 import holidays
+import pyowm
+import requests
 
 
 class ContextGetter():
@@ -51,9 +52,18 @@ class ContextGetter():
         return holidays_today
 
     def get_context(self):
+        timestamp_now = time.time()
+        if self.weather.get_sunrise_time() < timestamp_now and self.weather.get_sunset_time() > timestamp_now:
+            daytime = True
+        elif self.weather.get_sunrise_time() > timestamp_now or self.weather.get_sunset_time() < timestamp_now:
+            daytime = False
+        else:
+            raise Exception
+
         return {
             "Holidays": self.get_holidays(),
-            "Weather": self.weather.get_detailed_status(),
+            "WeatherCode": self.weather.get_weather_code(),
+            "Daytime": daytime,
             "Temperature": self.weather.get_temperature("celsius")["temp"]
         }
 

@@ -2,7 +2,7 @@
 
 from pynamodb.models import Model
 from pynamodb.attributes import (
-    NumberAttribute, UnicodeAttribute, MapAttribute, UTCDateTimeAttribute
+    NumberAttribute, UnicodeAttribute, MapAttribute, UTCDateTimeAttribute, BooleanAttribute
 )
 
 class ContextTable(Model):
@@ -15,5 +15,6 @@ class ContextTable(Model):
 
     datetime = UTCDateTimeAttribute(hash_key=True)
     holidays = MapAttribute()
-    weather = UnicodeAttribute()
+    weather = NumberAttribute()
+    daytime = BooleanAttribute()
     temperature = NumberAttribute()

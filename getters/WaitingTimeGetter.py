@@ -41,10 +41,13 @@ class WaitingTimeGetter:
         for item in self.attractions.items():
             attraction = next(waiting_time for waiting_time in api_response if waiting_time["attractionid"] == item[0])
             try:
-                waiting_time_dict[item[1]] = int(attraction["latency"])
-            except (ValueError, KeyError):
+                waiting_time_dict[item[0]] = (item[1], int(attraction["latency"]))
+            except (ValueError):
                 logging.debug(f"Can't translate \"{attraction['latency'] if 'latency' in attraction else 'NONE'}\"")
-                waiting_time_dict[item[1]] = None
+                waiting_time_dict[item[0]] = (item[1], None)
+            except (KeyError):
+                logging.error(f"Error while parsing API's results!")
+                waiting_time_dict[item[0]] = (None, None)
 
         return waiting_time_dict
 

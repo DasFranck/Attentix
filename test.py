@@ -1,43 +1,51 @@
 import datetime
 
-from classes.ContextGetter import ContextGetter
-from classes.WaitingTimeGetter import WaitingTimeGetter
+from getters import ContextGetter
+from getters import WaitingTimeGetter
 
-from tables.ContextTable import ContextTable
-from tables.WaitingTimeTable import WaitingTimeTable
+from tables import ContextTable
+from tables import WaitingTimeTable
 
-wtg = WaitingTimeGetter()
-cg = ContextGetter()
 
 for table in [WaitingTimeTable, ContextTable]:
     if not table.exists():
         table.create_table(wait=True)
 
-waiting_time = wtg.get_waiting_time()
-context = cg.get_context()
-
 now = datetime.datetime.now()
 
-for item, value in waiting_time.items():
 
-    waiting_time_item = WaitingTimeTable(
-        datetime=now,
-        attraction_name=item
-    )
+wtg = WaitingTimeGetter()
+waiting_time = wtg.get_waiting_time()
+with WaitingTimeTable.batch_write() as batch:
+    waiting_time_list = [
+            WaitingTimeTable(
+                datetime=now,
+                attraction_id=item,
+                waiting_time=value[1]
+                )
+            for item, value in waiting_time.items() if value[1]
+            ]
+    for item in waiting_time_list:
+        batch.save(item)
 
+
+
+cg = ContextGetter()
+context = cg.get_context()
 context_item = ContextTable(
     datetime = now,
     holidays = context["Holidays"],
-    weather = context["Weather"],
+    weather = context["WeatherCode"],
+    daytime = context["Daytime"],
     temperature = context["Temperature"]
 )
-
-waiting_time_item.save()
 context_item.save()
+
+
 
 for item in ContextTable.scan():
     print(item.holidays.attribute_values)
 
 for item in WaitingTimeTable.scan():
     print(item.datetime)
-    print(item.attractions.attribute_values)
+    print(item.waiting_time)
