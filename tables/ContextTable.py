@@ -15,6 +15,7 @@ class ContextTable(Model):
 
     datetime = UTCDateTimeAttribute(hash_key=True)
     holidays = MapAttribute()
+    day_type = UnicodeAttribute()
     weather = NumberAttribute()
     daytime = BooleanAttribute()
     temperature = NumberAttribute()
