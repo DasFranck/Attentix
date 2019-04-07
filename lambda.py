@@ -54,6 +54,7 @@ def handler(event, context):
         holidays = context["Holidays"],
         weather = context["WeatherCode"],
         daytime = context["Daytime"],
+        day_type = context["DayType"],
         temperature = context["Temperature"]
     )
     context_item.save()

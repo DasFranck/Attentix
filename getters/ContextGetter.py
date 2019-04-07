@@ -8,7 +8,6 @@ import time
 
 from dateutil import tz
 
-
 import holidays
 import pyowm
 import requests
@@ -70,21 +69,6 @@ class ContextGetter():
 
         return holidays_today
 
-    def get_context(self):
-        if self.weather.get_sunrise_time() < self.now.timestamp() and self.weather.get_sunset_time() > self.now.timestamp():
-            daytime = True
-        elif self.weather.get_sunrise_time() > self.now.timestamp() or self.weather.get_sunset_time() < self.now.timestamp():
-            daytime = False
-        else:
-            raise Exception
-
-        return {
-            "Holidays": self.get_holidays(),
-            "WeatherCode": self.weather.get_weather_code(),
-            "Daytime": daytime,
-            "Temperature": self.weather.get_temperature("celsius")["temp"]
-        }
-
     def _get_day_info(self):
         """
         A = 10h - 18h
@@ -145,6 +129,23 @@ class ContextGetter():
             day_types = json.load(day_types_file)
         
         return day_types[self._get_day_info()[1]]
+
+    def get_context(self):
+        if self.weather.get_sunrise_time() < self.now.timestamp() and self.weather.get_sunset_time() > self.now.timestamp():
+            daytime = True
+        elif self.weather.get_sunrise_time() > self.now.timestamp() or self.weather.get_sunset_time() < self.now.timestamp():
+            daytime = False
+        else:
+            raise Exception
+
+        return {
+            "Holidays": self.get_holidays(),
+            "WeatherCode": self.weather.get_weather_code(),
+            "Daytime": daytime,
+            "DayType": self.get_day_type(),
+            "Temperature": self.weather.get_temperature("celsius")["temp"]
+        }
+
 
 if __name__ == "__main__":
     from pprint import pprint
