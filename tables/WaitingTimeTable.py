@@ -10,8 +10,7 @@ class WaitingTimeTable(Model):
         read_capacity_units = 1
         write_capacity_units = 1
         table_name = "WaitingTime"
-        host = "http://localhost:8000"
-        #region = "eu-west-1"
+        region = "eu-west-1"
 
     attraction_id = UnicodeAttribute(hash_key=True)
     datetime = UTCDateTimeAttribute(range_key=True)
