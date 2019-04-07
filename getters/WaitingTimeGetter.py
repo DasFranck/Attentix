@@ -4,6 +4,8 @@ import datetime
 import json
 import logging
 
+from dateutil import tz
+
 import requests
 
 from collections import OrderedDict
@@ -18,10 +20,19 @@ class WaitingTimeGetter:
     attraction_list = {}
     now = None
 
-    def __init__(self, now=datetime.datetime.now()):
+    def __init__(self, now):
+        """
+        now must be UTC time!
+        """
+        self.now = now
+        self.local_now = now.astimezone(tz.gettz("Europe/Paris"))
         self._get_attraction_list()
         self._check_attractions()
-        self.now = now
+
+    def _get_attraction_list(self):
+        with open(self.ATTRACTION_JSON_PATH) as attractions_file:
+            attractions = json.load(attractions_file)
+        self.attractions = OrderedDict(sorted(attractions.items(), key=lambda t: t[0]))
 
     def _check_attractions(self):
         attraction_response = requests.get(self.ATTRACTION_URL, headers=self.HEADERS).json()["result"]["attractions"]
@@ -30,11 +41,6 @@ class WaitingTimeGetter:
                 if self.attractions[item["code"]].lower() != item["title"].lower():
                     logging.critical(f"Attraction name doesn't match {item['code']}\nPlease check if attractions have been modified.")
                     logging.critical(f"{self.attractions[item['code']].lower()} - {item['title'].lower()}")
-
-    def _get_attraction_list(self):
-        with open(self.ATTRACTION_JSON_PATH) as attractions_file:
-            attractions = json.load(attractions_file)
-        self.attractions = OrderedDict(sorted(attractions.items(), key=lambda t: t[0]))
 
     def get_attraction_list(self):
         return self.attraction_list
@@ -58,5 +64,7 @@ class WaitingTimeGetter:
 
 if __name__ == "__main__":
     from pprint import pprint
-    wtg = WaitingTimeGetter()
+
+    now = datetime.datetime.now(tz.tzutc())
+    wtg = WaitingTimeGetter(now)
     pprint(wtg.get_waiting_time())

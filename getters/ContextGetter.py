@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+import datetime
 import json
 import logging
 import os
 import time
 
-from datetime import datetime, timedelta, date, time
+from dateutil import tz
+
 
 import holidays
 import pyowm
@@ -18,12 +20,19 @@ class ContextGetter():
     CALENDAR_JSON_PATH =  "data/calendar.json"
     DAY_TYPES_JSON_PATH = "data/day_types.json"
 
+    local_now = None
+    now = None
     owm = None
     weather = None
 
-    def __init__(self, now=datetime.now()):
+    def __init__(self, now):
+        """
+        now must be UTC time!
+        """
+
         self.now = now
-        # self._init_owm()
+        self.local_now = now.astimezone(tz.gettz("Europe/Paris"))
+        self._init_owm()
 
     def _init_owm(self, owm_api_key=None):
         if not owm_api_key:
@@ -31,13 +40,17 @@ class ContextGetter():
         self.owm = pyowm.OWM(API_key=owm_api_key, version="2.5")
         self.weather = self.owm.weather_at_coords(49.135143, 2.565823).get_weather()
 
-    def get_holidays(self, date=date.today()):
+    def get_holidays(self, date=None):
         """
         Return a dict with every Holidays at the date passed in parameters.
         If no parameter is passed, the function default to today's date.
 
         Expected argument type: datetime.date
         """
+
+        if not date:
+            date = self.local_now.date()
+
         holidays_today = {
             "French Holiday A Zone": False,
             "French Holiday B Zone": False,
@@ -85,38 +98,38 @@ class ContextGetter():
         with open(self.CALENDAR_JSON_PATH) as calendar_file:
             calendar = json.load(calendar_file)
 
-        target_date = self.now.date()
-        target_time = self.now.time()
+        target_date = self.local_now.date()
+        target_time = self.local_now.time()
 
-        previous_calendar_day = calendar[str(target_date - timedelta(days=1))]
+        previous_calendar_day = calendar[str(target_date - datetime.timedelta(days=1))]
         calendar_day = calendar[str(target_date)]
-        # next_calendar_day = calendar[str(target_date + timedelta(days=1))]
+        # next_calendar_day = calendar[str(target_date + datetime.timedelta(days=1))]
 
         # Weird piece code due to weird data
         is_open = False
-        if target_time <= time(1, 0):
+        if target_time <= datetime.time(1, 0):
             day_type = previous_calendar_day["type"] 
             if day_type == "E": 
                 is_open = True
         else:
             day_type = calendar_day["type"]
             if day_type == "A" or day_type == "B":
-                if time(10, 0) <= target_time and target_time <= time(18, 0):
+                if datetime.time(10, 0) <= target_time and target_time <= datetime.time(18, 0):
                     is_open = True
 
             elif day_type == "C" or day_type == "E":
-                if time(10, 0) <= target_time and target_time <= time(22, 0):
+                if datetime.time(10, 0) <= target_time and target_time <= datetime.time(22, 0):
                     is_open = True
 
             elif day_type == "D":
                 pass
 
             elif day_type == "E":
-                if time(9, 0) <= target_time and target_time <= time(18, 0) or time(19, 0) <= target_time:
+                if datetime.time(9, 0) <= target_time and target_time <= datetime.time(18, 0) or datetime.time(19, 0) <= target_time:
                     is_open = True
 
             elif day_type == "G":
-                if time(11, 0) <= target_time and target_time <= time(18, 0):
+                if datetime.time(11, 0) <= target_time and target_time <= datetime.time(18, 0):
                     is_open = True
 
             else:
@@ -135,5 +148,7 @@ class ContextGetter():
 
 if __name__ == "__main__":
     from pprint import pprint
-    cg = ContextGetter()
+
+    now = datetime.datetime.now(tz.tzutc())
+    cg = ContextGetter(now)
     pprint(cg.get_context())

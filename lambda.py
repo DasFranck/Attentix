@@ -1,6 +1,8 @@
 import datetime
 import logging
 
+from dateutil import tz
+
 from getters import ContextGetter
 from getters import WaitingTimeGetter
 
@@ -8,11 +10,19 @@ from tables import ContextTable
 from tables import WaitingTimeTable
 
 
+
 def handler(event, context):
     try:
         now = datetime.datetime.strptime(event["time"])
+        now = now.replace(tzinfo=tz.tzutc())
     except (KeyError, TypeError):
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz.tzutc())
+
+    logging.info(f"Summoned at {now} UTC")
+
+    for table in [WaitingTimeTable, ContextTable]:
+        if not table.exists():
+            table.create_table(wait=True)
 
     cg = ContextGetter(now)
     wtg = WaitingTimeGetter(now)
